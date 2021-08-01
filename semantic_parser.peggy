@@ -1,7 +1,4 @@
-// Simple Arithmetics Grammar
-// ==========================
-//
-// Accepts expressions like "2 * (3 + 4)" and computes their value.
+
 
 {
 function less_than(a){
@@ -11,32 +8,45 @@ function less_than(a){
 }
 
 function greater_than(a){
-	return function(b){
+  return function(b){
   	return b > a;
   }
 }
 
+function equal_to(a){
+  return function(b){
+  	return b === a;
+  }
+}
+
 function or(a){
-	return function(b){
+	//this could be overloaded to work with sets as well as boolean functions
+    if(typeof(a) === 'boolean'){
+    	return function(b){
+        	return a || b;
+        }
+    }
+    else
+    return function(b){
   	return function(c){
-  		if(typeof(a) == 'function' && typeof(b) == 'function')
+		if(typeof(a) == 'function' && typeof(b) == 'function')
   		return a(c) || b(c);
-  		else if(typeof(a) == 'boolean' && typeof(b) == 'boolean'){
-		return a || b;	
-		}
   	};
   };
 }
 
 function and(a){
 	//this could be overloaded to work with sets as well as boolean functions
-	return function(b){
+    if(typeof(a) === 'boolean'){
+    	return function(b){
+        	return a && b;
+        }
+    }
+    else
+    return function(b){
   	return function(c){
 		if(typeof(a) == 'function' && typeof(b) == 'function')
   		return a(c) && b(c);
-  		else if(typeof(a) == 'boolean' && typeof(b) == 'boolean'){
-		return a && b;
-		}
   	};
   };
 }
@@ -58,13 +68,25 @@ function are(a){
 }
 
 function is_a(a){
+  return function(b){
   if(a === 'function' || a === 'number' || a === 'boolean' || a === 'string'){
-  	return function(b){return typeof(b) === a};
+	return typeof(b) === a;
   }
   else if(a === 'array'){
-  	return function(b){
-    	return Array.isArray(b);
-    }
+    return Array.isArray(b);
+  }
+  else if(a === "even number"){
+	return b%2 === 0;  
+  }
+  else if(a === "odd number"){
+	return b%2 === 1;
+  }
+  else if(a === "positive number"){
+	return b > 0;  
+  }
+  else if(a === "negative number"){
+	return b < 0;
+  }
   }
 }
 
@@ -76,6 +98,21 @@ console.log(a1([1,2,3]));
 console.log(a2(1));
 
 }
+
+e4
+  = head:e3 tail:(__ ("or" / "||") __ e3)* {
+      return tail.reduce(function(result, element) {
+        return and(result)(element[3]);
+      }, head);
+    }
+
+e3
+  = head:statement tail:(__ ("and" / "but" / "&&") __ statement)* {
+      return tail.reduce(function(result, element) {
+        return and(result)(element[3]);
+      }, head);
+    }
+
 
 statement = a:Factor __ "is" __ b:e2 {return b(a);}
 
@@ -96,10 +133,14 @@ e1
       return to_return;
     }
 
+an = "an" / "a";
+
 verb_phrase =
-  "a" __ a:Factor {return is_a(a)}
+  an __ a:IDENTIFIER __ "number" {return is_a(a+" number")}
+  /an __ a:Factor {return is_a(a)}
   / "less" __ "than" __ a:Factor {return less_than(a);}
   / ("greater" / "more") __ "than" __ a:Factor {return greater_than(a);}
+  / "equal" __ "to" __ a:Factor {return equal_to(a);}
   / "not" __ a:verb_phrase {return not(a);}
 
 Factor
@@ -113,7 +154,7 @@ Integer "integer"
 
 _ "whitespace"
   = [ \t\n\r]*
-  
+
 IDENTIFIER = [a-zA-Z_][a-zA-Z0-9_]* {return text();}
 STRING_LITERAL = '"' @$([^"\\] / "\\" .)* '"'
 
